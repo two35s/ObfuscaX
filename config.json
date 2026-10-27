@@ -1,29 +1,29 @@
-[
-  {
-    "type": "ps1",
-    "lhost": "192.168.1.10",
-    "lport": 4444,
-    "obf": "dynamic",
-    "in_memory": true,
-    "msfvenom": true,
-    "output": "payload_dynamic_1.ps1"
-  },
-  {
-    "type": "exe",
-    "lhost": "192.168.1.10",
-    "lport": 5555,
-    "obf": "static",
-    "in_memory": false,
-    "msfvenom": true,
-    "output": "payload_static_2.exe"
-  },
-  {
-    "type": "ps1",
-    "lhost": "10.0.0.5",
-    "lport": 4444,
-    "obf": "static",
-    "in_memory": false,
-    "msfvenom": false,
-    "output": "custom_payload.ps1"
-  }
-]
+{
+  "jobs": [
+    {
+      "type": "ps1",
+      "lhost": "192.168.1.10",
+      "lport": 4444,
+      "obf": "dynamic",
+      "xor_key": 77,
+      "msfvenom": true,
+      "output": "payload_dynamic_1.ps1"
+    },
+    {
+      "type": "exe",
+      "lhost": "192.168.1.10",
+      "lport": 5555,
+      "obf": "none",
+      "msfvenom": true,
+      "output": "payload_raw_2.exe"
+    },
+    {
+      "type": "ps1",
+      "lhost": "10.0.0.5",
+      "lport": 4444,
+      "obf": "static",
+      "msfvenom": false,
+      "output": "custom_payload.ps1"
+    }
+  ]
+}

